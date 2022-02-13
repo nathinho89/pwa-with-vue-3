@@ -52,6 +52,7 @@ export default {
         return
       }
       this.todos.push(todoItem)
+      this.saveTodo(todoItem)
       this.newTodo = ''
     },
 
@@ -98,7 +99,7 @@ export default {
           let database = event.target.result;
 
           database.createObjectStore(
-            'toDos', {
+            'todos', {
               autoIncrement: true,
               keyPath: 'id'
             });
@@ -110,13 +111,13 @@ export default {
       this.database = await this.getDatabase();
 
       return new Promise((resolve, reject) => {
-        const transaction = this.getDatabase.transaction('toDos', 'readonly')
-        const store = transaction.objectStore('toDos')
+        const transaction = this.database.transaction('todos', 'readonly')
+        const store = transaction.objectStore('todos')
         
         let toDoList = []
 
         store.openCursor().onsuccess = event => {
-          const cursor = event.raget.result
+          const cursor = event.target.result
           if(cursor) {
             toDoList.push(cursor.value) // cursor is the row 
             cursor.continue();
@@ -148,12 +149,31 @@ export default {
       this.todos.splice(index, 1)
     },
 
+    async saveTodo(todo) {
+      this.database = await this.getDatabase();
+
+      return new Promise((resolve, reject) => {
+        const transaction = this.database.transaction('todos', 'readwrite');
+        const store = transaction.objectStore('todos')
+
+        store.put(todo)
+
+        transaction.oncomplete = () => {
+          resolve('Item successfully saved')
+        }
+
+        transaction.onerror = event => {
+          reject(event)
+        }
+      })
+    },
+
     updateTodo(todo) {
       this.todos.find(item => item === todo).completed = !todo.completed
     }
   },
   async created() {
-    this.toDos = await this.getToDoStore();
+    this.todos = await this.getToDoStore();
   }
 }
 </script>
@@ -162,11 +182,6 @@ export default {
   <section class="todoapp">
     <header class="header">
       <h1>todos</h1> 
-      <h2>Database</h2>
-      <p>
-        {{ database }}
-      </p>
-      <button @click="getDatabase">Get Database</button>
       <input
         class="new-todo"
         autofocus
