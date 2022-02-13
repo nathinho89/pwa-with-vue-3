@@ -93,6 +93,43 @@ export default {
           this.database = event.target.result;
           resolve(this.database)
         }
+
+        request.onupgradeneeded = event => {
+          let database = event.target.result;
+
+          database.createObjectStore(
+            'toDos', {
+              autoIncrement: true,
+              keyPath: 'id'
+            });
+        }
+      })
+    },
+
+    async getToDoStore() {
+      this.database = await this.getDatabase();
+
+      return new Promise((resolve, reject) => {
+        const transaction = this.getDatabase.transaction('toDos', 'readonly')
+        const store = transaction.objectStore('toDos')
+        
+        let toDoList = []
+
+        store.openCursor().onsuccess = event => {
+          const cursor = event.raget.result
+          if(cursor) {
+            toDoList.push(cursor.value) // cursor is the row 
+            cursor.continue();
+          }
+        }
+
+        transaction.oncomplete = () => {
+          resolve(toDoList)
+        }
+
+        transaction.onerror = event => {
+          reject(event)
+        }
       })
     },
 
@@ -114,6 +151,9 @@ export default {
     updateTodo(todo) {
       this.todos.find(item => item === todo).completed = !todo.completed
     }
+  },
+  async created() {
+    this.toDos = await this.getToDoStore();
   }
 }
 </script>
@@ -121,7 +161,12 @@ export default {
 <template>
   <section class="todoapp">
     <header class="header">
-      <h1>todos</h1>
+      <h1>todos</h1> 
+      <h2>Database</h2>
+      <p>
+        {{ database }}
+      </p>
+      <button @click="getDatabase">Get Database</button>
       <input
         class="new-todo"
         autofocus
@@ -130,6 +175,7 @@ export default {
         v-model="newTodo"
         @keyup.enter="addTodo"
       />
+     
     </header>
     <section class="main" v-show="todos.length">
       <input
