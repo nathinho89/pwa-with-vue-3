@@ -2,6 +2,7 @@
 export default {
   name: 'App',
   data: () => ({
+    database: null,
     todos: [],
     newTodo: '',
     editedTodo: null,
@@ -73,6 +74,26 @@ export default {
     editTodo(todo) {
       this.beforeEditCache = todo.title
       this.editedTodo = todo
+    },
+
+    async getDatabase() {
+      return new Promise((resolve, reject) => {
+        if (this.database) {
+          resolve(this.database)
+        }
+
+        let request = window.indexedDB.open('toDoMvcDB', 1);
+
+        request.onerror = event => {
+          console.error('ERROR: Unable to open database', event)
+          reject('Error')
+        }
+
+        request.onsuccess = event => {
+          this.database = event.target.result;
+          resolve(this.database)
+        }
+      })
     },
 
     pluralize(word, count) {
