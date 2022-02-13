@@ -117,12 +117,12 @@ export default {
         }
 
         request.onsuccess = event => {
-          this.database = event.target.result;
+          this.database = event.target?.result;
           resolve(this.database)
         }
 
         request.onupgradeneeded = event => {
-          let database = event.target.result;
+          let database = event.target?.result;
 
           database.createObjectStore(
             'todos', {
